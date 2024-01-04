@@ -4,6 +4,9 @@
 This example shows how to scan for SCLE devices
 and extract the temperature data from the advertising packets
 
+Android 5+
+Written in Java
+
 
 ## Steps
 In order to scan for SCLE devices, you need to:
