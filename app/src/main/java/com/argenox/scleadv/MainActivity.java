@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(MODULE_TAG, "Error No permission to scan");
                 //return false;
             }
-            bluetoothAdapter.getBluetoothLeScanner().startScan(null, settings, mScanCallback);
+            bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, mScanCallback);
         }
         return true;
     }
