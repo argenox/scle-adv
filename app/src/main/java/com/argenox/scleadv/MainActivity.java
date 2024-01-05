@@ -4,7 +4,10 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -14,6 +17,7 @@ import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +27,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.widget.Button;
 
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_PERMS_CODE = 20;
 
-    private ScanCallback mScanCallback = null;
+//    private ScanCallback mScanCallback = null;
 
     public static String ARGENOX_SENSOR_SERVICE_BASE_STR = "00001200-874b-3189-8b10-0006da7fd002";
 
@@ -68,6 +73,40 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
+                // Request the ACCESS_FINE_LOCATION permission at runtime
+                if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                {
+//            RequestPermissions(new string[] { android.Manifest.permission.ACCESS_FINE_LOCATION },
+//                    REQUEST_FINE_LOCATION_PERMISSION);
+
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                            1);
+                }
+
+                if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                {
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{android.Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                            1);
+                }
+
+                // Request the BLUETOOTH_SCAN permission at runtime
+                if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+                {
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{android.Manifest.permission.BLUETOOTH_SCAN},
+                            1);
+                }
+
+                //Request the BLUETOOTH_CONNECT permission at runtime
+                if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+                {
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.BLUETOOTH_CONNECT},
+                            1);
+                }
+
                 UUID sensorUUID;
                 List<UUID> searchUUIDList = null;
 
@@ -77,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 Log.v(MODULE_TAG, "Initializing Scan");
-                initScan();
+//                initScan();
 
                 Log.v(MODULE_TAG, "Starting Scanning with" + searchUUIDList);
                 scanWithServiceUUID(searchUUIDList, 0);
@@ -150,6 +189,16 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+    ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Log.e("Activity result","OK");
+                    // There are no request codes
+                    Intent data = result.getData();
+                }
+            });
+
     public boolean managePermissions() {
 
 
@@ -169,6 +218,34 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_CONNECT
+        ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,            android.Manifest.permission.BLUETOOTH_CONNECT)) {
+
+                String[] connPerm = {Manifest.permission.BLUETOOTH_CONNECT};
+                ActivityCompat.requestPermissions(this, connPerm,1);
+            }
+        }
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BLUETOOTH_SCAN
+        ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+            android.Manifest.permission.BLUETOOTH_SCAN
+                )) {
+                String[] connPerm = {Manifest.permission.BLUETOOTH_SCAN};
+                ActivityCompat.requestPermissions(this, connPerm,1);
+            }
+        }
+
         if (currentNeededPermissions.size() > 0) {
             /* Request the first permission needed */
 
@@ -178,47 +255,51 @@ public class MainActivity extends AppCompatActivity {
             curPermsMissing = currentNeededPermissions.toArray(curPermsMissing);
             //requestPermissions(curPermsMissing, REQUEST_PERMS_CODE);
 
-            for (String perm : curPermsMissing) {
-                //requestPermission(perm, REQUEST_PERMISSION_PHONE_STATE);
-                requestPermissionLauncher.launch(perm);
-            }
+//            ActivityCompat.requestPermissions(MainActivity.this, curPermsMissing,1);
+//            for (String perm : curPermsMissing) {
+//                //requestPermission(perm, REQUEST_PERMISSION_PHONE_STATE);
+//                requestPermissionLauncher.launch(perm);
+//                //requestPermission(MainActivity.this, perm,1);
+//
+//            }
+            int permissionsCode = 42;
 
 
-            return true;
+            ActivityCompat.requestPermissions(this, curPermsMissing, permissionsCode);
+
+
         }
+
+
+
+
 
         return false;
     }
+    private ScanCallback mScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
 
-    private boolean initScan() {
-        /* API 21 and Above */
-        mScanCallback = new ScanCallback() {
-            @Override
-            public void onScanResult(int callbackType, ScanResult result) {
+            Log.v(MODULE_TAG, "Scan Result " + result);
 
-                Log.v(MODULE_TAG, "Scan Result " + result);
+            ScanRecord scanRecord = result.getScanRecord();
+            byte[] data = scanRecord.getManufacturerSpecificData(576);
 
-                ScanRecord scanRecord = result.getScanRecord();
-                byte[] data = scanRecord.getManufacturerSpecificData(576);
+            int tempDec = data[4] | (data[5] << 8);
+            float tempFloat = tempDec / 100.0f;
+        }
 
-                int tempDec = data[4] | (data[5] << 8);
-                float tempFloat = tempDec / 100.0f;
+        @Override
+        public void onBatchScanResults(List<ScanResult> results) {
+
+            Log.d(MODULE_TAG, "Batch Scan Results");
+
+            /*  Process a   batch   scan    results */
+            for (ScanResult sr : results) {
+                Log.i("Scan Item:   ", sr.toString());
             }
-
-            @Override
-            public void onBatchScanResults(List<ScanResult> results) {
-
-                Log.d(MODULE_TAG, "Batch Scan Results");
-
-                /*  Process a   batch   scan    results */
-                for (ScanResult sr : results) {
-                    Log.i("Scan Item:   ", sr.toString());
-                }
-            }
-        };
-
-        return true;
-    }
+        }
+    };
 
     /* start scanning for BT LE devices around */
     @SuppressWarnings({"unused", "WeakerAccess", "UnusedReturnValue"})
@@ -230,11 +311,11 @@ public class MainActivity extends AppCompatActivity {
 
 
         if (Build.VERSION.SDK_INT < 21) {
-            Log.v(MODULE_TAG, "Not supported in this app to use Scanning API < 21");
+            Log.d(MODULE_TAG, "Not supported in this app to use Scanning API < 21");
 
         } else {
 
-            Log.v(MODULE_TAG, "Scanning API >= 21");
+            Log.d(MODULE_TAG, "Scanning API >= 21");
             if (settings == null) {
 
                 settings = new ScanSettings.Builder() //
@@ -253,10 +334,10 @@ public class MainActivity extends AppCompatActivity {
                 //                                          int[] grantResults)
                 // to handle the case where the user grants the permission. See the documentation
                 // for ActivityCompat#requestPermissions for more details.
-                Log.v(MODULE_TAG, "Error No permission to scan");
-                return false;
+                Log.d(MODULE_TAG, "Error No permission to scan");
+                //return false;
             }
-            bluetoothAdapter.getBluetoothLeScanner().startScan(filters, settings, mScanCallback);
+            bluetoothAdapter.getBluetoothLeScanner().startScan(null, settings, mScanCallback);
         }
         return true;
     }
@@ -277,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
 
-            Log.i("onLeScan", device.toString());
+            Log.d("onLeScan", device.toString());
 
 
         }
